@@ -1,11 +1,11 @@
 """
 Loading pre-trained model on cityscapes dataset, freezeing backbone and replacing classifier
 """
-
 import torch
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
+import numpy as np
 import matplotlib.pyplot as plt
 
 import utils
@@ -82,22 +82,18 @@ class DeepLab(pl.LightningModule):
             loss_val = F.cross_entropy(x_hat, mask, ignore_index=0)
 
             if batch_idx in self.log_val_idx:
-                mask_pred = torch.argmax(x_hat, dim=1).cpu().detach().numpy()
+                mask_pred = torch.argmax(x_hat, dim=1)
 
-                mask_pred = self.val_dataset.decode_target(mask_pred[0])
-                mask_label = self.val_dataset.decode_target(mask[0].cpu().detach().numpy())
+                mask_pred = self.val_dataset.decode_target(mask_pred[0].cpu().detach().numpy()).transpose(2, 0, 1)
+                mask_label = self.val_dataset.decode_target(mask[0].cpu().detach().numpy()).transpose(2, 0, 1)
 
                 # transform image back for display
-                # unorm = UnNormalize(mean=[0.35675976, 0.37380189, 0.3764753], std=[0.32064945, 0.32098866, 0.32325324])
-                # img2 = unorm(img)
-                # img2 = img.transpose(1, 2).transpose(2, 3).detach().cpu().numpy()
+                img = utils.denormalize(x[0], mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])\
+                    .detach().cpu().numpy()
 
-                fig, axes = plt.subplots(1, 2)
-                # axes[0].imshow(img2[0])
-                axes[0].imshow(mask_pred)
-                axes[1].imshow(mask_label)
+                image = np.stack([img, mask_pred/256, mask_label/256])  # (3, 3, H, W)
 
-                self.logger.experiment.add_figure(f'val/inference_{batch_idx}', fig, self.global_step)
+                self.logger.experiment.add_images(f'val/inference_{batch_idx}', image, self.global_step)
 
             return {'val_loss': loss_val}
 

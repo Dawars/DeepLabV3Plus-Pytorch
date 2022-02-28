@@ -77,7 +77,7 @@ def main(opts):
     logger = TestTubeLogger(save_dir=os.path.join(opts.save_path, 'logs'),
                             name=opts.exp_name,
                             # debug=opts.debug,
-                            create_git_tag=False,
+                            create_git_tag=True,
                             log_graph=False)
 
     trainer = pl.Trainer(gpus=None if is_debug else 1,
