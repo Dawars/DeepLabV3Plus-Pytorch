@@ -57,6 +57,10 @@ class LabelMeFacade(data.Dataset):
         self.images = []
         self.targets = []
 
+        self.colormap = []
+        for c in self.classes:
+            self.colormap.append(c.color)
+
         self.colormap2label = np.zeros(256 ** 3)
         for c in self.classes:
             self.colormap2label[(c.color[0] * 256 + c.color[1]) * 256 + c.color[2]] = c.id
