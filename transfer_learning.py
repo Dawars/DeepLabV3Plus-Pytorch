@@ -26,9 +26,9 @@ def get_argparser():
     parser.add_argument("--crop_val", action='store_true', default=False,
                         help='crop validation (default: False)')
     parser.add_argument("--batch_size", type=int, default=32,
-                        help='batch size (default: 16)')
-    parser.add_argument("--val_batch_size", type=int, default=8,
-                        help='batch size for validation (default: 4)')
+                        help='batch size (default: 32)')
+    parser.add_argument("--val_batch_size", type=int, default=1,
+                        help='batch size for validation (default: 1)')
     parser.add_argument("--crop_size", type=int, default=513)
     parser.add_argument('--random_seed', type=int, default=42,
                         help='Set random seed everywhere')
@@ -53,20 +53,18 @@ def main(opts):
                         std=[0.229, 0.224, 0.225]),
     ])
 
-    is_debug = False
-
     val_transform = et.ExtCompose([
         et.ExtResize([512, 512]),
         et.ExtToTensor(),
         et.ExtNormalize(mean=[0.485, 0.456, 0.406],
                         std=[0.229, 0.224, 0.225]),
     ])
+    is_debug = False
+
     dataset_train = LabelMeFacade('/mnt/hdd/datasets/facade/labelmefacade', 'train', transform=train_transform)
     dataset_val = LabelMeFacade('/mnt/hdd/datasets/facade/labelmefacade', 'val', transform=val_transform)
-    train_loader = DataLoader(dataset_train, batch_size=opts.batch_size, shuffle=True, num_workers=4, pin_memory=True)
-    val_loader = DataLoader(dataset_val, batch_size=opts.val_batch_size, drop_last=True)
     # model
-    model = DeepLab(opts)
+    model = DeepLab(opts, dataset_train, dataset_val)
     # training
 
     checkpoint_callback = \
@@ -95,7 +93,7 @@ def main(opts):
                          benchmark=True,
                          profiler="simple",  # if hparams.num_gpus == 1 else None,
 )
-    trainer.fit(model, train_loader, val_loader)
+    trainer.fit(model)
 
 
 if __name__ == '__main__':
