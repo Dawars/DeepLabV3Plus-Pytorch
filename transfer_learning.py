@@ -25,9 +25,9 @@ def get_argparser():
     parser = argparse.ArgumentParser()
     parser.add_argument("--crop_val", action='store_true', default=False,
                         help='crop validation (default: False)')
-    parser.add_argument("--batch_size", type=int, default=16,
+    parser.add_argument("--batch_size", type=int, default=32,
                         help='batch size (default: 16)')
-    parser.add_argument("--val_batch_size", type=int, default=4,
+    parser.add_argument("--val_batch_size", type=int, default=8,
                         help='batch size for validation (default: 4)')
     parser.add_argument("--crop_size", type=int, default=513)
     parser.add_argument('--random_seed', type=int, default=42,
@@ -53,7 +53,7 @@ def main(opts):
                         std=[0.229, 0.224, 0.225]),
     ])
 
-    is_debug = True
+    is_debug = False
 
     val_transform = et.ExtCompose([
         et.ExtResize([512, 512]),
@@ -63,8 +63,8 @@ def main(opts):
     ])
     dataset_train = LabelMeFacade('/mnt/hdd/datasets/facade/labelmefacade', 'train', transform=train_transform)
     dataset_val = LabelMeFacade('/mnt/hdd/datasets/facade/labelmefacade', 'val', transform=val_transform)
-    train_loader = DataLoader(dataset_train, batch_size=opts.batch_size, shuffle=True, pin_memory=True)
-    val_loader = DataLoader(dataset_val, batch_size=opts.val_batch_size)
+    train_loader = DataLoader(dataset_train, batch_size=opts.batch_size, shuffle=True, num_workers=4, pin_memory=True)
+    val_loader = DataLoader(dataset_val, batch_size=opts.val_batch_size, drop_last=True)
     # model
     model = DeepLab(opts)
     # training
@@ -72,7 +72,7 @@ def main(opts):
     checkpoint_callback = \
         ModelCheckpoint(dirpath=os.path.join(opts.save_path, 'ckpts', opts.exp_name),
                         filename='{epoch:d}',
-                        monitor='loss',
+                        monitor='train/ce',
                         mode='max',
                         save_top_k=-1)
 

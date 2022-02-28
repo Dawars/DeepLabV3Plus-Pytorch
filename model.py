@@ -59,6 +59,7 @@ class DeepLab(pl.LightningModule):
         x, mask = train_batch
         x_hat = self.model(x)
         loss_val = F.cross_entropy(x_hat, mask, ignore_index=0)
+        self.log('train/ce', loss_val)
         return {'loss': loss_val}
 
     def validation_step(self, val_batch, batch_idx):
@@ -66,4 +67,9 @@ class DeepLab(pl.LightningModule):
             x, mask = val_batch
             x_hat = self.model(x)
             loss_val = F.cross_entropy(x_hat, mask, ignore_index=0)
-            return {'loss': loss_val}
+            return {'val_loss': loss_val}
+
+    def validation_epoch_end(self, outputs):
+        val_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
+        self.log('val/ce', val_loss)
+        return {'val_loss': val_loss}
