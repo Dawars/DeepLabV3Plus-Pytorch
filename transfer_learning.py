@@ -36,6 +36,8 @@ def get_argparser():
                         help='paths to save checkpoints and logs to')
     parser.add_argument('--exp_name', type=str, default='exp',
                         help='experiment name')
+    parser.add_argument('--backbone', type=str, default='resnet101',
+                        choices=['resnet101', 'mobilenet'], help='backbone name')
 
     return parser.parse_args()
 
@@ -81,7 +83,7 @@ def main(opts):
                             log_graph=False)
 
     trainer = pl.Trainer(gpus=None if is_debug else 1,
-                         max_epochs=70,
+                         max_epochs=20,
                          checkpoint_callback=True,
                          callbacks=[checkpoint_callback],
                          # resume_from_checkpoint=hparams.ckpt_path,

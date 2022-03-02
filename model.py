@@ -9,21 +9,28 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import utils
-from network import deeplabv3plus_resnet101, DeepLabHeadV3Plus
+from network import deeplabv3plus_resnet101, DeepLabHeadV3Plus, deeplabv3plus_mobilenet
 
 num_classes = 9  # for new task
 output_stride = 16
-ckpt = "pretrained/best_deeplabv3plus_resnet101_cityscapes_os16.pth.tar"
 
 
 class DeepLab(pl.LightningModule):
     def __init__(self, hparams, train_dataset, val_dataset):
         super().__init__()
         self.opts = hparams
-        self.save_hyperparameters(hparams)  # todo add deeplab variant, stride
+        self.save_hyperparameters(hparams)
 
         self.log_val_idx = list(range(4))
-        model = deeplabv3plus_resnet101(num_classes=19, output_stride=output_stride)
+
+        backbone = hparams.backbone
+
+        if backbone == "resnet101":
+            ckpt = "pretrained/best_deeplabv3plus_resnet101_cityscapes_os16.pth.tar"
+            model = deeplabv3plus_resnet101(num_classes=19, output_stride=output_stride)
+        elif backbone == "mobilenet":
+            ckpt = "pretrained/best_deeplabv3plus_mobilenet_cityscapes_os16.pth.tar"
+            model = deeplabv3plus_mobilenet(num_classes=19, output_stride=output_stride)
         utils.set_bn_momentum(model.backbone, momentum=0.01)
 
         # https://github.com/VainF/DeepLabV3Plus-Pytorch/issues/8#issuecomment-605601402, @PytaichukBohdan
