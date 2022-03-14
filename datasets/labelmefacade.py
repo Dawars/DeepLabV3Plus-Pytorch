@@ -30,14 +30,14 @@ class LabelMeFacade(data.Dataset):
         LabelMeFacadeClass('door',                 4, 5, 'construction', 2, True, False, (128, 128, 0)),
         LabelMeFacadeClass('sidewalk',             5, 6, 'flat', 1, False, False, (128, 128, 128)),
         LabelMeFacadeClass('road',                 6, 7, 'flat', 1, False, False, (128, 64, 0)),
-        LabelMeFacadeClass('vegetation',           7, 8, 'nature', 4, False, False, (107, 142, 35)),
+        LabelMeFacadeClass('vegetation',           7, 8, 'nature', 4, False, False, (0, 128, 0)),
         LabelMeFacadeClass('window',               8, 9, 'construction', 2, True, False, (0, 0, 128)),
     ]
 
-    train_id_to_color = [c.color for c in classes if (c.train_id != -1 and c.train_id != 255)]
-    train_id_to_color.append([0, 0, 0])
-    train_id_to_color = np.array(train_id_to_color)
-    id_to_train_id = np.array([c.train_id for c in classes])
+    # train_id_to_color = [c.color for c in classes if (c.train_id != -1 and c.train_id != 255)]
+    # train_id_to_color.append([0, 0, 0])
+    # train_id_to_color = np.array(train_id_to_color)
+    # id_to_train_id = np.array([c.train_id for c in classes])
 
     #train_id_to_color = [(0, 0, 0), (128, 64, 128), (70, 70, 70), (153, 153, 153), (107, 142, 35),
 
@@ -61,7 +61,7 @@ class LabelMeFacade(data.Dataset):
         for c in self.classes:
             self.colormap.append(c.color)
 
-        self.colormap2label = np.zeros(256 ** 3)
+        self.colormap2label = np.zeros(256 ** 3, dtype="int64")
         for c in self.classes:
             self.colormap2label[(c.color[0] * 256 + c.color[1]) * 256 + c.color[2]] = c.id
 
