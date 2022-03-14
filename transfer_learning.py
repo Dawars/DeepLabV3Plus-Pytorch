@@ -48,17 +48,19 @@ def main(opts):
     pl.seed_everything(opts.random_seed)
 
     train_transform = et.ExtCompose([
-        et.ExtResize([512, 512]),
-        # et.ExtRandomCrop(size=(opts.crop_size, opts.crop_size)),
+        # et.ExtResize([512, 512]),
+        et.ExtRandomRotation(15),
+        et.ExtRandomScale([1, 1.5]),
         et.ExtColorJitter(brightness=0.5, contrast=0.5, saturation=0.5),
         et.ExtRandomHorizontalFlip(),
+        et.ExtRandomCrop(512),
         et.ExtToTensor(),
         et.ExtNormalize(mean=[0.485, 0.456, 0.406],
                         std=[0.229, 0.224, 0.225]),
     ])
 
     val_transform = et.ExtCompose([
-        et.ExtResize([512, 512]),
+        et.ExtRandomCrop(512),
         et.ExtToTensor(),
         et.ExtNormalize(mean=[0.485, 0.456, 0.406],
                         std=[0.229, 0.224, 0.225]),
@@ -84,10 +86,11 @@ def main(opts):
                             create_git_tag=True,
                             log_graph=False)
 
+    early_stopping = pl.callbacks.EarlyStopping(monitor="val/ce")
     trainer = pl.Trainer(gpus=None if is_debug else 1,
                          max_epochs=20,
                          checkpoint_callback=True,
-                         callbacks=[checkpoint_callback],
+                         callbacks=[checkpoint_callback, early_stopping],
                          # resume_from_checkpoint=hparams.ckpt_path,
                          logger=logger,
                          weights_summary=None,
@@ -96,7 +99,7 @@ def main(opts):
                          num_sanity_val_steps=1,
                          benchmark=True,
                          profiler="simple",  # if hparams.num_gpus == 1 else None,
-)
+                         )
     trainer.fit(model)
 
 
