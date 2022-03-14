@@ -83,7 +83,7 @@ def main(opts):
         # training
 
         checkpoint_callback = \
-            ModelCheckpoint(dirpath=os.path.join(opts.save_path, 'ckpts', f'trial_{trial.number}', opts.exp_name),
+            ModelCheckpoint(dirpath=os.path.join(opts.save_path, 'ckpts', opts.exp_name, f'trial_{trial.number}'),
                             filename='{epoch:d}',
                             monitor='train/ce',
                             mode='max',
