@@ -49,10 +49,10 @@ def main(opts):
 
     train_transform = et.ExtCompose([
         # et.ExtResize([512, 512]),
-        et.ExtRandomRotation(15),
-        et.ExtRandomScale([1, 1.5]),
         et.ExtColorJitter(brightness=0.5, contrast=0.5, saturation=0.5),
         et.ExtRandomHorizontalFlip(),
+        et.ExtRandomRotation(15),
+        et.ExtRandomScale([1, 1.5]),
         et.ExtRandomCrop(512),
         et.ExtToTensor(),
         et.ExtNormalize(mean=[0.485, 0.456, 0.406],
@@ -60,7 +60,7 @@ def main(opts):
     ])
 
     val_transform = et.ExtCompose([
-        et.ExtRandomCrop(512),
+        et.ExtCenterCrop(512),
         et.ExtToTensor(),
         et.ExtNormalize(mean=[0.485, 0.456, 0.406],
                         std=[0.229, 0.224, 0.225]),
