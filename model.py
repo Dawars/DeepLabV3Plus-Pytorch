@@ -64,7 +64,7 @@ class DeepLab(pl.LightningModule):
         return self.model(x)
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.opts.lr)
         return optimizer
 
     def train_dataloader(self):

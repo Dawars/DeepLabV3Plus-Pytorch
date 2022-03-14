@@ -29,6 +29,8 @@ def get_argparser():
                         help='batch size (default: 32)')
     parser.add_argument("--val_batch_size", type=int, default=1,
                         help='batch size for validation (default: 1)')
+    parser.add_argument("--lr", type=float, default=1e-3,
+                        help='learning_rate')
     parser.add_argument("--crop_size", type=int, default=513)
     parser.add_argument('--random_seed', type=int, default=42,
                         help='Set random seed everywhere')
