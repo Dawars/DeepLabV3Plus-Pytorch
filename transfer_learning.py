@@ -1,8 +1,10 @@
 import argparse
 import os
 
+import optuna
 import torch
 import torchvision
+from optuna.integration import PyTorchLightningPruningCallback
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TestTubeLogger
 
@@ -40,6 +42,8 @@ def get_argparser():
                         help='experiment name')
     parser.add_argument('--backbone', type=str, default='resnet101',
                         choices=['resnet101', 'mobilenet'], help='backbone name')
+    parser.add_argument('--pruning', default=False, action='store_true',
+                        help='prune trials during hyperparam search')
 
     return parser.parse_args()
 
@@ -48,7 +52,6 @@ def main(opts):
     pl.seed_everything(opts.random_seed)
 
     train_transform = et.ExtCompose([
-        # et.ExtResize([512, 512]),
         et.ExtColorJitter(brightness=0.5, contrast=0.5, saturation=0.5),
         et.ExtRandomHorizontalFlip(),
         et.ExtRandomRotation(15),
@@ -65,42 +68,71 @@ def main(opts):
         et.ExtNormalize(mean=[0.485, 0.456, 0.406],
                         std=[0.229, 0.224, 0.225]),
     ])
-    is_debug = False
 
     dataset_train = LabelMeFacade('/mnt/hdd/datasets/facade/labelmefacade', 'train', transform=train_transform)
     dataset_val = LabelMeFacade('/mnt/hdd/datasets/facade/labelmefacade', 'val', transform=val_transform)
-    # model
-    model = DeepLab(opts, dataset_train, dataset_val)
-    # training
 
-    checkpoint_callback = \
-        ModelCheckpoint(dirpath=os.path.join(opts.save_path, 'ckpts', opts.exp_name),
-                        filename='{epoch:d}',
-                        monitor='train/ce',
-                        mode='max',
-                        save_top_k=-1)
+    is_debug = False
 
-    logger = TestTubeLogger(save_dir=os.path.join(opts.save_path, 'logs'),
-                            name=opts.exp_name,
-                            # debug=opts.debug,
-                            create_git_tag=True,
-                            log_graph=False)
+    def objective(trial: optuna.trial.Trial) -> float:
+        opts.lr = trial.suggest_loguniform('lr', 1e-6, 1e-3)
+        opts.batch_size = trial.suggest_categorical('batch_size', [8, 16, 32])
 
-    early_stopping = pl.callbacks.EarlyStopping(monitor="val/ce")
-    trainer = pl.Trainer(gpus=None if is_debug else 1,
-                         max_epochs=20,
-                         checkpoint_callback=True,
-                         callbacks=[checkpoint_callback, early_stopping],
-                         # resume_from_checkpoint=hparams.ckpt_path,
-                         logger=logger,
-                         weights_summary=None,
-                         progress_bar_refresh_rate=1,
-                         # accelerator='ddp' if hparams.num_gpus > 1 else None,
-                         num_sanity_val_steps=1,
-                         benchmark=True,
-                         profiler="simple",  # if hparams.num_gpus == 1 else None,
-                         )
-    trainer.fit(model)
+        # model
+        model = DeepLab(opts, dataset_train, dataset_val)
+        # training
+
+        checkpoint_callback = \
+            ModelCheckpoint(dirpath=os.path.join(opts.save_path, 'ckpts', f'trial_{trial.number}', opts.exp_name),
+                            filename='{epoch:d}',
+                            monitor='train/ce',
+                            mode='max',
+                            every_n_epochs=5,
+                            save_top_k=-1)
+
+        logger = TestTubeLogger(save_dir=os.path.join(opts.save_path, 'logs'),
+                                name=opts.exp_name,
+                                # debug=opts.debug,
+                                version=trial.number,
+                                create_git_tag=True,
+                                log_graph=False)
+
+        # early_stopping = pl.callbacks.EarlyStopping(monitor="val/ce")
+        early_stopping = PyTorchLightningPruningCallback(trial, monitor="val/ce")
+        trainer = pl.Trainer(gpus=None if is_debug else 1,
+                             max_epochs=80,
+                             checkpoint_callback=True,
+                             callbacks=[checkpoint_callback, early_stopping],
+                             # resume_from_checkpoint=hparams.ckpt_path,
+                             logger=logger,
+                             weights_summary=None,
+                             progress_bar_refresh_rate=1,
+                             # accelerator='ddp' if hparams.num_gpus > 1 else None,
+                             num_sanity_val_steps=1,
+                             benchmark=True,
+                             profiler="simple",  # if hparams.num_gpus == 1 else None,
+                             )
+        trainer.fit(model)
+
+        return trainer.callback_metrics["val/ce"].item()
+
+    pruner: optuna.pruners.BasePruner = (
+        optuna.pruners.MedianPruner() if opts.pruning else optuna.pruners.NopPruner()
+    )
+
+    study = optuna.create_study(direction="minimize", pruner=pruner)
+    study.optimize(objective, n_trials=20, timeout=600)
+
+    print("Number of finished trials: {}".format(len(study.trials)))
+
+    print("Best trial:")
+    trial = study.best_trial
+
+    print("  Value: {}".format(trial.value))
+
+    print("  Params: ")
+    for key, value in trial.params.items():
+        print("    {}: {}".format(key, value))
 
 
 if __name__ == '__main__':
