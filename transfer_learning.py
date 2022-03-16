@@ -115,7 +115,7 @@ def main(opts):
 
     search_space = {'lr': [1e-6, 1e-5, 1.7e-5, 1e-4, 1e-3], 'batch_size': [1, 2, 4, 8, 16, 32] }
     study = optuna.create_study(direction="minimize", pruner=pruner, sampler=optuna.samplers.GridSampler(search_space))
-    study.optimize(objective, n_trials=40)
+    study.optimize(objective)
 
     print("Number of finished trials: {}".format(len(study.trials)))
 
