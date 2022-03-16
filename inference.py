@@ -36,11 +36,11 @@ def main():
     ])
 
     dataset = LabelMeFacade('/mnt/hdd/datasets/facade/labelmefacade', split='test', transform=val_transform)
-    dataloader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=4, pin_memory=True, drop_last=False)
+    dataloader = DataLoader(dataset, batch_size=len(dataset), shuffle=False, num_workers=4, pin_memory=True, drop_last=False)
     predictions = trainer.predict(model, dataloaders=dataloader)
     for batch in predictions:
         for pred in batch:
-            mask = dataset.decode_target(pred)
+            mask = dataset.decode_target(pred).astype("uint")
             plt.imshow(mask)
             plt.show()
 
