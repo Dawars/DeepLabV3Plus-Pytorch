@@ -69,7 +69,7 @@ def main(opts):
 
     def objective(trial: optuna.trial.Trial) -> float:
         opts.lr = trial.suggest_loguniform('lr', 1e-6, 1e-3)
-        opts.batch_size = trial.suggest_categorical('batch_size', [16, 32])
+        opts.batch_size = trial.suggest_int('batch_size', 1, 32)
 
         # model
         model = DeepLab(opts, dataset_train, dataset_val)
@@ -81,7 +81,7 @@ def main(opts):
                             monitor='train/ce',
                             mode='max',
                             every_n_epochs=5,
-                            save_top_k=-1)
+                            save_top_k=5)
 
         logger = TestTubeLogger(save_dir=os.path.join(opts.save_path, 'logs'),
                                 name=opts.exp_name,
@@ -113,8 +113,9 @@ def main(opts):
         optuna.pruners.MedianPruner() if opts.pruning else optuna.pruners.NopPruner()
     )
 
-    study = optuna.create_study(direction="minimize", pruner=pruner)
-    study.optimize(objective, n_trials=20)
+    search_space = {'lr': [1e-6, 1e-5, 1.7e-5, 1e-4, 1e-3], 'batch_size': [1, 2, 4, 8, 16, 32] }
+    study = optuna.create_study(direction="minimize", pruner=pruner, sampler=optuna.samplers.GridSampler(search_space))
+    study.optimize(objective, n_trials=40)
 
     print("Number of finished trials: {}".format(len(study.trials)))
 
