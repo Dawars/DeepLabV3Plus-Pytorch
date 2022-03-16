@@ -16,7 +16,7 @@ output_stride = 16
 
 
 class DeepLab(pl.LightningModule):
-    def __init__(self, hparams, train_dataset, val_dataset):
+    def __init__(self, hparams, train_dataset=None, val_dataset=None):
         super().__init__()
         self.opts = hparams
         self.save_hyperparameters(hparams)
@@ -27,10 +27,10 @@ class DeepLab(pl.LightningModule):
 
         if backbone == "resnet101":
             ckpt = "pretrained/best_deeplabv3plus_resnet101_cityscapes_os16.pth.tar"
-            model = deeplabv3plus_resnet101(num_classes=19, output_stride=output_stride)
+            model = deeplabv3plus_resnet101(num_classes=19, output_stride=16)
         elif backbone == "mobilenet":
-            ckpt = "pretrained/best_deeplabv3plus_mobilenet_cityscapes_os16.pth.tar"
-            model = deeplabv3plus_mobilenet(num_classes=19, output_stride=output_stride)
+            ckpt = "pretrained/best_deeplabv3plus_mobilenet_cityscapes_os16.pth"
+            model = deeplabv3plus_mobilenet(num_classes=19, output_stride=8)
         utils.set_bn_momentum(model.backbone, momentum=0.01)
 
         # https://github.com/VainF/DeepLabV3Plus-Pytorch/issues/8#issuecomment-605601402, @PytaichukBohdan
@@ -79,6 +79,10 @@ class DeepLab(pl.LightningModule):
         loss_val = F.cross_entropy(x_hat, mask, ignore_index=0)
         self.log('train/ce', loss_val)
         return {'loss': loss_val}
+
+    def predict_step(self, batch, batch_id, **kwargs):
+        x_hat = self.model(batch)
+        return x_hat
 
     def validation_step(self, val_batch, batch_idx):
 

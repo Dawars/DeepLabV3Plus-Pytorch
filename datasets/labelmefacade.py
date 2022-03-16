@@ -104,11 +104,16 @@ class LabelMeFacade(data.Dataset):
             than one item. Otherwise target is a json object if target_type="polygon", else the image segmentation.
         """
         image = Image.open(self.images[index]).convert('RGB')
-        target = Image.open(self.targets[index])
-        if self.transform:
-            image, target = self.transform(image, target)
-        target = self.encode_target(target)
-        return image, target
+        if self.split != 'test':
+            target = Image.open(self.targets[index])
+            if self.transform:
+                image, target = self.transform(image, target)
+            target = self.encode_target(target)
+            return image, target
+        else:
+            if self.transform:
+                image = self.transform(image)
+                return image
 
     def __len__(self):
         return len(self.images)
