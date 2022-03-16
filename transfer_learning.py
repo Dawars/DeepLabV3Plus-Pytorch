@@ -2,18 +2,11 @@ import argparse
 import os
 
 import optuna
-import torch
-import torchvision
+
 from optuna.integration import PyTorchLightningPruningCallback
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TestTubeLogger
 
-from torch import nn
-from torch.nn import functional as F
-from torch.utils.data import DataLoader
-from torch.utils.data import random_split
-from torchvision.datasets import MNIST
-from torchvision import transforms
 import pytorch_lightning as pl
 from utils import ext_transforms as et
 
@@ -76,7 +69,7 @@ def main(opts):
 
     def objective(trial: optuna.trial.Trial) -> float:
         opts.lr = trial.suggest_loguniform('lr', 1e-6, 1e-3)
-        opts.batch_size = trial.suggest_categorical('batch_size', [8, 16, 32])
+        opts.batch_size = trial.suggest_categorical('batch_size', [16, 32])
 
         # model
         model = DeepLab(opts, dataset_train, dataset_val)
@@ -121,7 +114,7 @@ def main(opts):
     )
 
     study = optuna.create_study(direction="minimize", pruner=pruner)
-    study.optimize(objective, n_trials=20, timeout=600)
+    study.optimize(objective, n_trials=20)
 
     print("Number of finished trials: {}".format(len(study.trials)))
 
