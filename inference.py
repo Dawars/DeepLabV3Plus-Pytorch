@@ -1,6 +1,7 @@
 import argparse
 
 import torchvision
+from matplotlib import pyplot as plt
 from pytorch_lightning import Trainer
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose
@@ -37,6 +38,12 @@ def main():
     dataset = LabelMeFacade('/mnt/hdd/datasets/facade/labelmefacade', split='test', transform=val_transform)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=4, pin_memory=True, drop_last=False)
     predictions = trainer.predict(model, dataloaders=dataloader)
+    for batch in predictions:
+        for pred in batch:
+            mask = dataset.decode_target(pred)
+            plt.imshow(mask)
+            plt.show()
+
     # decode
     print(len(predictions))
 
