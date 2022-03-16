@@ -82,7 +82,8 @@ class DeepLab(pl.LightningModule):
 
     def predict_step(self, batch, batch_id, **kwargs):
         x_hat = self.model(batch)
-        return x_hat
+        mask_pred = torch.argmax(x_hat, dim=1)
+        return mask_pred
 
     def validation_step(self, val_batch, batch_idx):
 
