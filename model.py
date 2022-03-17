@@ -75,6 +75,11 @@ class DeepLab(pl.LightningModule):
 
     def training_step(self, train_batch, batch_idx):
         x, mask = train_batch
+
+        if len(x.shape) == 3:
+            x = x.unsqueeze(0)
+            mask = mask.unsqueeze(0)
+
         x_hat = self.model(x)
         loss_val = F.cross_entropy(x_hat, mask, ignore_index=0)
         self.log('train/ce', loss_val)
