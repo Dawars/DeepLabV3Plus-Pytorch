@@ -14,7 +14,6 @@ class LabelMeFacade(data.Dataset):
     **Parameters:**
         - **root** (string): Root directory of dataset where directory 'leftImg8bit' and 'gtFine' or 'gtCoarse' are located.
         - **split** (string, optional): The image split to use, 'train', 'test' or 'val' if mode="gtFine" otherwise 'train', 'train_extra' or 'val'
-        - **mode** (string, optional): The quality mode to use, 'gtFine' or 'gtCoarse' or 'color'. Can also be a list to output a tuple with all specified target types.
         - **transform** (callable, optional): A function/transform that takes in a PIL image and returns a transformed version. E.g, ``transforms.RandomCrop``
         - **target_transform** (callable, optional): A function/transform that takes in the target and transforms it.
     """
@@ -45,12 +44,12 @@ class LabelMeFacade(data.Dataset):
     #train_id_to_color = np.array(train_id_to_color)
     #id_to_train_id = np.array([c.category_id for c in classes], dtype='uint8') - 1
 
-    def __init__(self, root, split='train', mode='fine', target_type='semantic', transform=None):
+    def __init__(self, root, split='train', target_type='semantic', transform=None, label_root=None, split_file=None):
         self.root = os.path.expanduser(root)
-        self.mode = 'gtFine'
+        self.label_root = label_root if label_root else self.root
         self.target_type = target_type
         self.images_dir = os.path.join(self.root, 'images')
-        self.targets_dir = os.path.join(self.root, 'labels')
+        self.targets_dir = os.path.join(self.label_root, 'labels')
         self.transform = transform
 
         self.split = split
@@ -69,11 +68,12 @@ class LabelMeFacade(data.Dataset):
             raise ValueError('Invalid split for mode! Please use split="train", split="test"'
                              ' or split="val"')
 
-        if not os.path.isdir(self.images_dir) or not os.path.isdir(self.targets_dir):
+        if not os.path.isdir(self.images_dir):  # or not os.path.isdir(self.targets_dir):
             raise RuntimeError('Dataset not found or incomplete. Please make sure all required folders for the'
                                ' specified "split" and "mode" are inside the "root" directory')
 
-        split_file = os.path.join(self.root, f"{split}.txt")
+        if not split_file:
+            split_file = os.path.join(self.root, f"{split}.txt")
 
         with open(split_file) as f:
             for filename in f.readlines():

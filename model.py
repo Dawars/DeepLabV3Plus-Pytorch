@@ -86,9 +86,10 @@ class DeepLab(pl.LightningModule):
         return {'loss': loss_val}
 
     def predict_step(self, batch, batch_id, **kwargs):
-        x_hat = self.model(batch)
+        img, filename = batch
+        x_hat = self.model(img)
         mask_pred = torch.argmax(x_hat, dim=1)
-        return mask_pred
+        return mask_pred, filename
 
     def validation_step(self, val_batch, batch_idx):
 
