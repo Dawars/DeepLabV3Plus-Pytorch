@@ -44,11 +44,11 @@ class LabelMeFacade(data.Dataset):
     #train_id_to_color = np.array(train_id_to_color)
     #id_to_train_id = np.array([c.category_id for c in classes], dtype='uint8') - 1
 
-    def __init__(self, root, split='train', target_type='semantic', transform=None, label_root=None, split_file=None):
+    def __init__(self, root, split='train', target_type='semantic', transform=None, label_root=None, split_file=None, img_dir='images'):
         self.root = os.path.expanduser(root)
         self.label_root = label_root if label_root else self.root
         self.target_type = target_type
-        self.images_dir = os.path.join(self.root, 'images')
+        self.images_dir = os.path.join(self.root, img_dir)
         self.targets_dir = os.path.join(self.label_root, 'labels')
         self.transform = transform
 

@@ -58,7 +58,6 @@ def main():
 def bootstrapping_iteration(ckpt_path, exp_name, iteration):
     print(f"Starting iteration {iteration}")
 
-    batch_size = 8
     mode = 'last'  # or 'best'
 
     save_path = f"/mnt/hdd/datasets/facade/bootstrapping/{exp_name}/split_{iteration}"
@@ -66,6 +65,8 @@ def bootstrapping_iteration(ckpt_path, exp_name, iteration):
     split_file = f"/mnt/hdd/datasets/facade/bootstrapping/split_{iteration}.txt"
 
     hparams = argparse.Namespace(**{'backbone': 'resnet101',
+                                    'val_batch_size': 1,
+                                    'batch_size': 8,
                                     'lr': 1e-05})
 
     train_transform = et.ExtCompose([
@@ -80,8 +81,8 @@ def bootstrapping_iteration(ckpt_path, exp_name, iteration):
     ])
 
     # create now, load images later when they exist
-    dataset_train = LabelMeFacade('/mnt/hdd/datasets/facade/labelmefacade', 'train', transform=train_transform,
-                                  label_root=label_path, split_file=split_file)
+    dataset_train = LabelMeFacade('/mnt/hdd/datasets/facade/ZuBuD/ZuBuD/png-ZuBuD', 'train', transform=train_transform,
+                                  label_root=label_path, split_file=split_file, img_dir='')
 
     model = DeepLab.load_from_checkpoint(ckpt_path, hparams=hparams, train_dataset=dataset_train,
                                          val_dataset=dataset_val)
