@@ -44,12 +44,11 @@ class LabelMeFacade(data.Dataset):
     #train_id_to_color = np.array(train_id_to_color)
     #id_to_train_id = np.array([c.category_id for c in classes], dtype='uint8') - 1
 
-    def __init__(self, root, split='train', target_type='semantic', transform=None, label_root=None, split_file=None, img_dir='images'):
+    def __init__(self, root, split='train', target_type='semantic', transform=None, label_root=None, split_file=None, img_dir='images', ext='.jpg'):
         self.root = os.path.expanduser(root)
-        self.label_root = label_root if label_root else self.root
         self.target_type = target_type
         self.images_dir = os.path.join(self.root, img_dir)
-        self.targets_dir = os.path.join(self.label_root, 'labels')
+        self.targets_dir = label_root if label_root else os.path.join(self.root, 'labels')
         self.transform = transform
 
         self.split = split
@@ -78,7 +77,7 @@ class LabelMeFacade(data.Dataset):
         with open(split_file) as f:
             for filename in f.readlines():
                 filename = filename.strip()
-                self.images.append(os.path.join(self.images_dir, filename+".jpg"))
+                self.images.append(os.path.join(self.images_dir, filename+ext))
                 self.targets.append(os.path.join(self.targets_dir, filename+".png"))
 
     def encode_target(self, target):

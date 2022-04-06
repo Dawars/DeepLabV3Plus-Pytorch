@@ -57,6 +57,7 @@ def main():
 
 def bootstrapping_iteration(ckpt_path, exp_name, iteration):
     print(f"Starting iteration {iteration}")
+    print(f"Loading checkpoint {ckpt_path}")
 
     mode = 'last'  # or 'best'
 
@@ -67,14 +68,15 @@ def bootstrapping_iteration(ckpt_path, exp_name, iteration):
     hparams = argparse.Namespace(**{'backbone': 'resnet101',
                                     'val_batch_size': 1,
                                     'batch_size': 8,
-                                    'lr': 1e-05})
+                                    'lr': 1e-05,
+                                    'mode': mode})
 
     train_transform = et.ExtCompose([
+        et.ExtCenterCrop(512),  # center crop to have same dims and pos as label
         et.ExtColorJitter(brightness=0.5, contrast=0.5, saturation=0.5),
         et.ExtRandomHorizontalFlip(),
-        et.ExtRandomRotation(15),
-        et.ExtRandomScale([1, 1.5]),
-        et.ExtRandomCrop(512),
+        # et.ExtRandomRotation(15),
+        # et.ExtRandomScale([1, 1.5]),
         et.ExtToTensor(),
         et.ExtNormalize(mean=[0.485, 0.456, 0.406],
                         std=[0.229, 0.224, 0.225]),
@@ -82,7 +84,7 @@ def bootstrapping_iteration(ckpt_path, exp_name, iteration):
 
     # create now, load images later when they exist
     dataset_train = LabelMeFacade('/mnt/hdd/datasets/facade/ZuBuD/ZuBuD/png-ZuBuD', 'train', transform=train_transform,
-                                  label_root=label_path, split_file=split_file, img_dir='')
+                                  label_root=label_path, split_file=split_file, img_dir='', ext='.png')
 
     model = DeepLab.load_from_checkpoint(ckpt_path, hparams=hparams, train_dataset=dataset_train,
                                          val_dataset=dataset_val)
@@ -123,14 +125,14 @@ def bootstrapping_iteration(ckpt_path, exp_name, iteration):
                             drop_last=False)
 
     os.makedirs(label_path, exist_ok=True)
-
-    predictions = trainer.predict(model, dataloaders=dataloader)
-    for img_batch, filename_batch in tqdm.tqdm(predictions):
-        for i in range(len(img_batch)):
-            pred = img_batch[i]
-            filename = filename_batch[i]
-            mask = dataset_val.decode_target(pred).astype("uint8")
-            imageio.imsave(os.path.join(label_path, f"{filename}.png"), mask)
+    if iteration != 0:
+        predictions = trainer.predict(model, dataloaders=dataloader)
+        for img_batch, filename_batch in tqdm.tqdm(predictions):
+            for i in range(len(img_batch)):
+                pred = img_batch[i]
+                filename = filename_batch[i]
+                mask = dataset_val.decode_target(pred).astype("uint8")
+                imageio.imsave(os.path.join(label_path, f"{filename}.png"), mask)
 
     print(f"Training iteration {iteration}")
     # train
