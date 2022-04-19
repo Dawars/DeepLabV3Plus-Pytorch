@@ -22,10 +22,6 @@ import pytorch_lightning as pl
 from datasets.listdataset import ListDataset
 from utils import ext_transforms as et
 
-# data
-from datasets import Cityscapes
-from datasets.labelmefacade import LabelMeFacade
-from model import DeepLab
 from datasets.labelmefacade import LabelMeFacade
 from model import DeepLab
 
@@ -46,10 +42,11 @@ inference_transform = Compose([
 dataset_val = LabelMeFacade('/mnt/hdd/datasets/facade/labelmefacade', 'val', transform=val_transform)
 
 
+    # ckpt_path = '/mnt/hdd/datasets/facade/experiments/deeplab/ckpts/deeplabv3plus_resnet101_labelmefacade_batchsize2/trial_24/epoch=64.ckpt'
 def main():
     ckpt_path = '/mnt/hdd/datasets/facade/experiments/deeplab/ckpts/deeplabv3plus_resnet101_labelmefacade_best_hyper/trial_0/epoch=79.ckpt'
 
-    exp_name = 'test'
+    exp_name = 'labelmefacade_hand_first'
 
     for i in range(3):
         ckpt_path = bootstrapping_iteration(ckpt_path, exp_name, i)
@@ -59,7 +56,7 @@ def bootstrapping_iteration(ckpt_path, exp_name, iteration):
     print(f"Starting iteration {iteration}")
     print(f"Loading checkpoint {ckpt_path}")
 
-    mode = 'last'  # or 'best'
+    mode = 'first'  # or 'best' or first
 
     save_path = f"/mnt/hdd/datasets/facade/bootstrapping/{exp_name}/split_{iteration}"
     label_path = os.path.join(save_path, 'label')
@@ -89,10 +86,10 @@ def bootstrapping_iteration(ckpt_path, exp_name, iteration):
     model = DeepLab.load_from_checkpoint(ckpt_path, hparams=hparams, train_dataset=dataset_train,
                                          val_dataset=dataset_val)
     checkpoint_callback = ModelCheckpoint(dirpath=os.path.join(save_path, 'ckpts'),
-                                          filename='{epoch:d}',
+                                          filename='{epoch:02d}',
                                           monitor='train/ce',
                                           mode='max',
-                                          save_top_k=-1 if mode == 'last' else 1)
+                                          save_top_k=5 if mode == 'best' else -1)
 
     logger = TestTubeLogger(save_dir=os.path.join(save_path, 'logs'),
                             name=exp_name,
@@ -125,14 +122,13 @@ def bootstrapping_iteration(ckpt_path, exp_name, iteration):
                             drop_last=False)
 
     os.makedirs(label_path, exist_ok=True)
-    if iteration != 0:
-        predictions = trainer.predict(model, dataloaders=dataloader)
-        for img_batch, filename_batch in tqdm.tqdm(predictions):
-            for i in range(len(img_batch)):
-                pred = img_batch[i]
-                filename = filename_batch[i]
-                mask = dataset_val.decode_target(pred).astype("uint8")
-                imageio.imsave(os.path.join(label_path, f"{filename}.png"), mask)
+    predictions = trainer.predict(model, dataloaders=dataloader)
+    for img_batch, filename_batch in tqdm.tqdm(predictions):
+        for i in range(len(img_batch)):
+            pred = img_batch[i]
+            filename = filename_batch[i]
+            mask = dataset_val.decode_target(pred).astype("uint8")
+            imageio.imsave(os.path.join(label_path, f"{filename}.png"), mask)
 
     print(f"Training iteration {iteration}")
     # train
@@ -144,7 +140,11 @@ def bootstrapping_iteration(ckpt_path, exp_name, iteration):
 
     print(f"Finished iteration {iteration}")
 
-    return sorted(os.listdir(os.path.join(save_path, 'ckpts')))[-1]
+    if mode == 'first':
+        return ckpt_path
+    else:
+        ckpt_filename = sorted(os.listdir(os.path.join(save_path, 'ckpts')))[-1]
+        return os.path.join(save_path, 'ckpts', ckpt_filename)
 
 
 if __name__ == '__main__':
