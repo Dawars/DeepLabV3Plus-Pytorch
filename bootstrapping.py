@@ -6,7 +6,7 @@ import torchvision
 import tqdm
 from matplotlib import pyplot as plt
 from pytorch_lightning import Trainer
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, ConcatDataset
 from torchvision.transforms import Compose
 import argparse
 import os
@@ -41,26 +41,30 @@ inference_transform = Compose([
 
 dataset_val = LabelMeFacade('/mnt/hdd/datasets/facade/labelmefacade', 'val', transform=val_transform)
 
-
-    # ckpt_path = '/mnt/hdd/datasets/facade/experiments/deeplab/ckpts/deeplabv3plus_resnet101_labelmefacade_batchsize2/trial_24/epoch=64.ckpt'
 def main():
-    ckpt_path = '/mnt/hdd/datasets/facade/experiments/deeplab/ckpts/deeplabv3plus_resnet101_labelmefacade_best_hyper/trial_0/epoch=79.ckpt'
+    for md in ['original', 'last', 'best']:
+        for data in ['all', 'new', 'last']:
+            for ckpt in ['hand', 'ce']:
+                train(md, data, ckpt)
 
-    exp_name = 'labelmefacade_hand_first'
 
+def train(mode, data_mode, ckpt_mode):
+    ckpt_path = \
+        '/mnt/hdd/datasets/facade/experiments/deeplab/ckpts/deeplabv3plus_resnet101_labelmefacade_best_hyper/trial_0/epoch=79.ckpt' if ckpt_mode == 'hand' else \
+        '/mnt/hdd/datasets/facade/experiments/deeplab/ckpts/deeplabv3plus_resnet101_labelmefacade_batchsize2/trial_24/epoch=64.ckpt'  # best ce
+
+    exp_name = f'labelmefacade_{ckpt_mode}_{data_mode}_{mode}'
+    # exp_name = 'test'
     for i in range(3):
-        ckpt_path = bootstrapping_iteration(ckpt_path, exp_name, i)
+        ckpt_path = bootstrapping_iteration(ckpt_path, exp_name, i, mode, data_mode)
 
 
-def bootstrapping_iteration(ckpt_path, exp_name, iteration):
+def bootstrapping_iteration(ckpt_path, exp_name, iteration, mode, data_mode):
     print(f"Starting iteration {iteration}")
     print(f"Loading checkpoint {ckpt_path}")
 
-    mode = 'first'  # or 'best' or first
-
     save_path = f"/mnt/hdd/datasets/facade/bootstrapping/{exp_name}/split_{iteration}"
     label_path = os.path.join(save_path, 'label')
-    split_file = f"/mnt/hdd/datasets/facade/bootstrapping/split_{iteration}.txt"
 
     hparams = argparse.Namespace(**{'backbone': 'resnet101',
                                     'val_batch_size': 1,
@@ -80,8 +84,17 @@ def bootstrapping_iteration(ckpt_path, exp_name, iteration):
     ])
 
     # create now, load images later when they exist
-    dataset_train = LabelMeFacade('/mnt/hdd/datasets/facade/ZuBuD/ZuBuD/png-ZuBuD', 'train', transform=train_transform,
+    datasets = []
+    if data_mode == 'all':
+        datasets.append(LabelMeFacade('/mnt/hdd/datasets/facade/labelmefacade', 'train', transform=train_transform,
+                      label_root='/mnt/hdd/datasets/facade/labelmefacade/labels', img_dir='images', ext='.jpg'))
+    start_iter = iteration if data_mode == 'last' else 0
+    for i in range(start_iter, iteration + 1):
+        split_file = f"/mnt/hdd/datasets/facade/bootstrapping/split_{iteration}.txt"
+        dataset = LabelMeFacade('/mnt/hdd/datasets/facade/ZuBuD/ZuBuD/png-ZuBuD', 'train', transform=train_transform,
                                   label_root=label_path, split_file=split_file, img_dir='', ext='.png')
+        datasets.append(dataset)
+    dataset_train = ConcatDataset(datasets)
 
     model = DeepLab.load_from_checkpoint(ckpt_path, hparams=hparams, train_dataset=dataset_train,
                                          val_dataset=dataset_val)
@@ -89,7 +102,7 @@ def bootstrapping_iteration(ckpt_path, exp_name, iteration):
                                           filename='{epoch:02d}',
                                           monitor='train/ce',
                                           mode='max',
-                                          save_top_k=5 if mode == 'best' else -1)
+                                          save_top_k=1 if mode == 'best' else -1)
 
     logger = TestTubeLogger(save_dir=os.path.join(save_path, 'logs'),
                             name=exp_name,
@@ -99,7 +112,7 @@ def bootstrapping_iteration(ckpt_path, exp_name, iteration):
                             log_graph=False)
 
     trainer = Trainer(gpus=1,
-                      max_epochs=80,
+                      max_epochs=5,
                       checkpoint_callback=True,
                       callbacks=[checkpoint_callback],
                       # resume_from_checkpoint=hparams.ckpt_path,
@@ -140,11 +153,9 @@ def bootstrapping_iteration(ckpt_path, exp_name, iteration):
 
     print(f"Finished iteration {iteration}")
 
-    if mode == 'first':
-        return ckpt_path
-    else:
-        ckpt_filename = sorted(os.listdir(os.path.join(save_path, 'ckpts')))[-1]
-        return os.path.join(save_path, 'ckpts', ckpt_filename)
+    if mode == 'original': return ckpt_path
+    ckpt_filename = sorted(os.listdir(os.path.join(save_path, 'ckpts')))[-1]
+    return os.path.join(save_path, 'ckpts', ckpt_filename)
 
 
 if __name__ == '__main__':
