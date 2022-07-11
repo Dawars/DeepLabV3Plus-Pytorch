@@ -8,24 +8,22 @@ from torchvision.transforms import Compose
 
 from datasets.labelmefacade import LabelMeFacade
 from model import DeepLab
-from utils import ext_transforms as et
-
-CKPT_PATH = '/mnt/hdd/datasets/facade/experiments/deeplab/ckpts/deeplabv3plus_resnet101_labelmefacade/trial_14/epoch=79.ckpt'
 
 
 def get_argparser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--backbone', type=str, default='resnet101',
                         choices=['resnet101', 'mobilenet'], help='backbone name')
-    parser.add_argument('--load_ckpt_path', type=str,
+    parser.add_argument('--ckpt_path', type=str,
                         default='/mnt/hdd/datasets/facade/experiments/deeplab/ckpts/deeplabv3plus_resnet101_labelmefacade/trial_14/epoch=79.ckpt',
                         help='path of ckpt to load')
+
     return parser.parse_args()
 
 
 def main():
     opts = get_argparser()
-    model = DeepLab.load_from_checkpoint(CKPT_PATH, hparams=opts)
+    model = DeepLab.load_from_checkpoint(opts.ckpt_path, hparams=opts)
     trainer = Trainer(gpus=1)
 
     val_transform = Compose([

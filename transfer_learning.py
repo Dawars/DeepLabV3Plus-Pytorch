@@ -80,8 +80,7 @@ def main(opts):
                             filename='{epoch:d}',
                             monitor='train/ce',
                             mode='max',
-                            every_n_epochs=5,
-                            save_top_k=5)
+                            save_top_k=-1)
 
         logger = TestTubeLogger(save_dir=os.path.join(opts.save_path, 'logs'),
                                 name=opts.exp_name,
@@ -113,7 +112,7 @@ def main(opts):
         optuna.pruners.MedianPruner() if opts.pruning else optuna.pruners.NopPruner()
     )
 
-    search_space = {'lr': [1e-6, 1e-5, 1.7e-5, 1e-4, 1e-3], 'batch_size': [1, 2, 4, 8, 16, 32] }
+    search_space = {'lr': [1e-5], 'batch_size': [8,] }
     study = optuna.create_study(direction="minimize", pruner=pruner, sampler=optuna.samplers.GridSampler(search_space))
     study.optimize(objective)
 

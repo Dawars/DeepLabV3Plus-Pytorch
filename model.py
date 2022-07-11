@@ -68,7 +68,7 @@ class DeepLab(pl.LightningModule):
         return optimizer
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.opts.batch_size, shuffle=True, num_workers=4, pin_memory=True)
+        return DataLoader(self.train_dataset, batch_size=self.opts.batch_size, shuffle=True, num_workers=4, drop_last=True, pin_memory=True)
 
     def val_dataloader(self):
         return DataLoader(self.val_dataset, batch_size=self.opts.val_batch_size, drop_last=True)
