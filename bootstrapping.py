@@ -42,7 +42,7 @@ inference_transform = Compose([
 dataset_val = LabelMeFacade('/mnt/hdd/datasets/facade/labelmefacade', 'val', transform=val_transform)
 
 def main():
-    for md in ['original', 'last', 'best']:
+    for md in ['original']:  # , 'last', 'best']:
         for data in ['all', 'new', 'last']:
             for ckpt in ['hand', 'ce']:
                 train(md, data, ckpt)
@@ -53,8 +53,8 @@ def train(mode, data_mode, ckpt_mode):
         '/mnt/hdd/datasets/facade/experiments/deeplab/ckpts/deeplabv3plus_resnet101_labelmefacade_best_hyper/trial_0/epoch=79.ckpt' if ckpt_mode == 'hand' else \
         '/mnt/hdd/datasets/facade/experiments/deeplab/ckpts/deeplabv3plus_resnet101_labelmefacade_batchsize2/trial_24/epoch=64.ckpt'  # best ce
 
-    exp_name = f'labelmefacade_{ckpt_mode}_{data_mode}_{mode}'
-    # exp_name = 'test'
+    # exp_name = f'labelmefacade_{ckpt_mode}_{data_mode}_{mode}'
+    exp_name = 'test'
     for i in range(3):
         ckpt_path = bootstrapping_iteration(ckpt_path, exp_name, i, mode, data_mode)
 
@@ -90,7 +90,7 @@ def bootstrapping_iteration(ckpt_path, exp_name, iteration, mode, data_mode):
                       label_root='/mnt/hdd/datasets/facade/labelmefacade/labels', img_dir='images', ext='.jpg'))
     start_iter = iteration if data_mode == 'last' else 0
     for i in range(start_iter, iteration + 1):
-        split_file = f"/mnt/hdd/datasets/facade/bootstrapping/split_{iteration}.txt"
+        split_file = f"/mnt/hdd/datasets/facade/bootstrapping/split_{i}.txt"
         dataset = LabelMeFacade('/mnt/hdd/datasets/facade/ZuBuD/ZuBuD/png-ZuBuD', 'train', transform=train_transform,
                                   label_root=label_path, split_file=split_file, img_dir='', ext='.png')
         datasets.append(dataset)
