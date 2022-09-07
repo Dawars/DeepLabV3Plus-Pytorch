@@ -44,11 +44,11 @@ class LabelMeFacade(data.Dataset):
     #train_id_to_color = np.array(train_id_to_color)
     #id_to_train_id = np.array([c.category_id for c in classes], dtype='uint8') - 1
 
-    def __init__(self, root, split='train', target_type='semantic', transform=None, label_root=None, split_file=None, img_dir='images', ext='.jpg'):
+    def __init__(self, root, split='train', target_type='semantic', transform=None, label_root=None, split_file=None, img_dir='images', label_dir='labels', ext='.jpg'):
         self.root = os.path.expanduser(root)
         self.target_type = target_type
         self.images_dir = os.path.join(self.root, img_dir)
-        self.targets_dir = label_root if label_root else os.path.join(self.root, 'labels')
+        self.targets_dir = label_root if label_root else os.path.join(self.root, label_dir )
         self.transform = transform
 
         self.split = split
@@ -73,10 +73,11 @@ class LabelMeFacade(data.Dataset):
 
         if not split_file:
             split_file = os.path.join(self.root, f"{split}.txt")
-
+        self.image_names = []
         with open(split_file) as f:
             for filename in f.readlines():
                 filename = filename.strip()
+                self.image_names.append(filename)
                 self.images.append(os.path.join(self.images_dir, filename+ext))
                 self.targets.append(os.path.join(self.targets_dir, filename+".png"))
 
@@ -103,16 +104,16 @@ class LabelMeFacade(data.Dataset):
             than one item. Otherwise target is a json object if target_type="polygon", else the image segmentation.
         """
         image = Image.open(self.images[index]).convert('RGB')
-        if self.split != 'test':
-            target = Image.open(self.targets[index])
-            if self.transform:
-                image, target = self.transform(image, target)
-            target = self.encode_target(target)
-            return image, target
-        else:
-            if self.transform:
-                image = self.transform(image)
-                return image
+        #if self.split != 'test':
+        target = Image.open(self.targets[index]).convert('RGB')
+        if self.transform:
+            image, target = self.transform(image, target)
+        target = self.encode_target(target)
+        return image, target
+        #else:
+        #    if self.transform:
+        #        image = self.transform(image)
+        #        return image, self.image_names[index]
 
     def __len__(self):
         return len(self.images)

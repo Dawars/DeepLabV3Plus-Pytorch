@@ -46,25 +46,19 @@ def run_validation(ckpt_path, exp_name):
         et.ExtNormalize(mean=[0.485, 0.456, 0.406],
                         std=[0.229, 0.224, 0.225]),
     ])
-    dataset_inference = LabelMeFacade('/mnt/hdd/datasets/facade/etrim/etrims-db_v1', 'val', transform=val_transform,
-                                      img_dir='images/08_etrims-ds', label_dir='annotations/08_etrims-ds')
+    # etrims
+    # dataset_inference = LabelMeFacade('/mnt/hdd/datasets/facade/etrim/etrims-db_v1', 'val', transform=val_transform,
+    #                                  img_dir='images/08_etrims-ds', label_dir='annotations/08_etrims-ds')
+    # labelmefacade test set
+    dataset_inference = LabelMeFacade('/mnt/hdd/datasets/facade/labelmefacade', 'test', transform=val_transform)
 
-    dataloader = DataLoader(dataset_inference, batch_size=1, shuffle=False, num_workers=4,
+    dataloader = DataLoader(dataset_inference, batch_size=1, shuffle=False, num_workers=0,
                             pin_memory=True,
                             drop_last=False)
     model.val_dataset = dataset_inference
     predictions = trainer.validate(model, dataloaders=dataloader)
     with open(os.path.join(OUT_PATH, exp_name, 'val_error.json'), 'w') as f:
         f.write(json.dumps(predictions))
-
-    # todo save
-    # for batch in predictions:
-    #     for i in range(len(batch[1])):
-    #         pred = batch[0][i]
-    #         name = batch[1][i]
-    #         mask = dataset_inference.decode_target(pred).astype("uint8")
-
-    #         Image.fromarray(mask).save(os.path.join(OUT_PATH, f"{name}.png"))
 
 
 def main():
@@ -80,10 +74,10 @@ def main():
 
     run_validation(
         '/mnt/hdd/datasets/facade/experiments/deeplab/ckpts/deeplabv3plus_resnet101_labelmefacade_best_hyper/trial_0/epoch=79.ckpt',
-        'fine_tune_hand')
+        'labelmefacade_fine_tune_hand')
     run_validation(
         '/mnt/hdd/datasets/facade/experiments/deeplab/ckpts/deeplabv3plus_resnet101_labelmefacade_batchsize2/trial_24/epoch=64.ckpt',
-        'fine_tune_ce')
+        'labelmefacade_fine_tune_ce')
 
 
 if __name__ == '__main__':
