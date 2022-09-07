@@ -20,6 +20,15 @@ python transfer_learning.py --data_path /path/to/labelmefacade/ --save_path ./sa
 ```
 
 ### Bootstrapping
+Bootstrapping is fine-tuning the model from the previous step using data from the LabelMeFacade and ZuDuB datasets in different configurations.
+
+Download the checkpoints [https://github.com/Dawars/DeepLabV3Plus-Pytorch/releases](here) or run the previous step and use the best models.
+
+Modify the code so that the dataset paths point to the correct places.
+
+```bash
+python bootstrapping.py
+```
 
 
 ### Evaluation
