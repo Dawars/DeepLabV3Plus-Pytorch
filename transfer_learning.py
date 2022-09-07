@@ -31,6 +31,8 @@ def get_argparser():
                         help='Set random seed everywhere')
     parser.add_argument('--save_path', type=str, default='/mnt/hdd/datasets/facade/experiments/deeplab/',
                         help='paths to save checkpoints and logs to')
+    parser.add_argument('--data_path', type=str, default='/mnt/hdd/datasets/facade/labelmefacade',
+                        help='paths to dataset for training/validation')
     parser.add_argument('--exp_name', type=str, default='exp',
                         help='experiment name')
     parser.add_argument('--backbone', type=str, default='resnet101',
@@ -62,8 +64,8 @@ def main(opts):
                         std=[0.229, 0.224, 0.225]),
     ])
 
-    dataset_train = LabelMeFacade('/mnt/hdd/datasets/facade/labelmefacade', 'train', transform=train_transform)
-    dataset_val = LabelMeFacade('/mnt/hdd/datasets/facade/labelmefacade', 'val', transform=val_transform)
+    dataset_train = LabelMeFacade(opts.data_path, 'train', transform=train_transform)
+    dataset_val = LabelMeFacade(opts.data_path, 'val', transform=val_transform)
 
     is_debug = False
 
